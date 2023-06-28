@@ -5,6 +5,8 @@ var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var mainRoute = require('./routes/mainRoute');
+
 
 var app = express();
 
@@ -15,6 +17,14 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
+// app.use('/users', usersRouter);
+app.use("/api/v1/", mainRoute)
+
+app.use((req, res, next) => {
+    res.status(404);
+    res.send({
+      error: '404 Page: Not found',
+    });
+  });
 
 module.exports = app;

@@ -11,9 +11,9 @@ router.get('/', function (req, res, next) {
   res.json("ab")
 });
 
-router.get('/test', function (req, res, next) {
-  console.log("test");
-  res.json("test")
+// router.get('/test', function (req, res, next) {
+//   console.log("test");
+//   res.json("test")
 
-});
+// });
 module.exports = router;
