@@ -12,6 +12,8 @@ router.get('/', function (req, res, next) {
 });
 
 router.get('/test', function (req, res, next) {
-  console.log("hello");
+  console.log("test");
+  res.json("test")
+
 });
 module.exports = router;
