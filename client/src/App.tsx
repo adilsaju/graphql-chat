@@ -1,7 +1,8 @@
-import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery, useMutation } from '@apollo/client';
-import { useState } from 'react';
+import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery, useMutation, useSubscription } from '@apollo/client';
+import { useState, useEffect } from 'react';
+
 const client = new ApolloClient({
-  uri: 'http://localhost:3000/graphql',
+  uri: 'http://localhost:4000/graphql',
   cache: new InMemoryCache(),
 });
 
@@ -18,36 +19,54 @@ const MESSAGES_QUERY = gql`
   query($roomId: ID!) {
     messages(roomId: $roomId) {
       id
-      sender {
-        id
-        name
-      }
-      message
-      date
+      sender
+      content
     }
   }
 `;
 
 const SEND_MESSAGE_MUTATION = gql`
-  mutation($roomId: ID!, $senderId: ID!, $message: String!) {
-    sendMessage(roomId: $roomId, senderId: $senderId, message: $message) {
+  mutation($roomId: ID!, $sender: String!, $content: String!) {
+    sendMessage(roomId: $roomId, sender: $sender, content: $content) {
       id
-      sender {
-        id
-        name
-      }
-      message
-      date
+      sender
+      content
+    }
+  }
+`;
+
+const MESSAGE_SUBSCRIPTION = gql`
+  subscription($roomId: ID!) {
+    messageSent(roomId: $roomId) {
+      id
+      sender
+      content
     }
   }
 `;
 
 function App() {
   const { loading, error, data } = useQuery(ROOMS_QUERY);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [sendMessage] = useMutation(SEND_MESSAGE_MUTATION);
+  const { data: subscriptionData } = useSubscription(MESSAGE_SUBSCRIPTION, {
+    variables: { roomId: selectedRoomId },
+  });
 
-  const handleSendMessage = async (roomId:string, senderId:string, message:string) => {
-    await sendMessage({ variables: { roomId, senderId, message } });
+  useEffect(() => {
+    if (subscriptionData) {
+      const newMessage = subscriptionData.messageSent;
+      // Handle the newly received message as per your requirements
+      console.log('New message:', newMessage);
+    }
+  }, [subscriptionData]);
+
+  const handleSendMessage = async (sender: string, content: string) => {
+    await sendMessage({ variables: { roomId: selectedRoomId, sender, content } });
+  };
+
+  const handleRoomSelection = (roomId: string) => {
+    setSelectedRoomId(roomId);
   };
 
   if (loading) return <p>Loading...</p>;
@@ -57,14 +76,18 @@ function App() {
     <div>
       <h1>Chat App</h1>
       <ul>
-        {data.rooms.map((room:{ id: string, room: string }) => (
-          <li key={room.id}>
+        {data.rooms.map((room: { id: string, room: string }) => (
+          <li key={room.id} onClick={() => handleRoomSelection(room.id)}>
             {room.room}
-            <MessageList roomId={room.id} />
-            <SendMessageForm roomId={room.id} onSendMessage={handleSendMessage} />
           </li>
         ))}
       </ul>
+      {selectedRoomId && (
+        <>
+          <MessageList roomId={selectedRoomId} />
+          <SendMessageForm roomId={selectedRoomId} onSendMessage={handleSendMessage} />
+        </>
+      )}
     </div>
   );
 }
@@ -79,28 +102,31 @@ function MessageList({ roomId }: { roomId: string }) {
 
   return (
     <ul>
-      {data.messages.map((message:  { id: string, sender: { name: string }, message: string }) => (
+      {data.messages.map((message: { id: string, sender: string, content: string }) => (
         <li key={message.id}>
-          <strong>{message.sender.name}: </strong>
-          {message.message}
+          <strong>{message.sender}: </strong>
+          {message.content}
         </li>
       ))}
     </ul>
   );
 }
 
-function SendMessageForm({ roomId, onSendMessage }: { roomId: string, onSendMessage: (roomId: string, senderId: string, message: string) => void }) {
-  const [message, setMessage] = useState('');
+function SendMessageForm({ roomId, onSendMessage }: { roomId: string, onSendMessage: (sender: string, content: string) => void }) {
+  const [sender, setSender] = useState('');
+  const [content, setContent] = useState('');
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSendMessage(roomId, 'sender-id', message);
-    setMessage('');
+    onSendMessage(sender, content);
+    setSender('');
+    setContent('');
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
+      <input type="text" value={sender} onChange={(e) => setSender(e.target.value)} placeholder="Your Name" />
+      <input type="text" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Your Message" />
       <button type="submit">Send</button>
     </form>
   );
