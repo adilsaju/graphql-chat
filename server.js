@@ -134,15 +134,6 @@ const resolvers = {
 
 
 
-async function startServer1() {
-// Create Apollo Server
-const server1 = new ApolloServer({ typeDefs, resolvers });
-await server1.start();
-// Mount Apollo Server on the Express app
-server1.applyMiddleware({ app });
-}
-
-
 app.use('/', indexRouter);
 // app.use('/users', usersRouter);
 app.use("/api/v1/", mainRoute)
@@ -154,7 +145,22 @@ app.use((req, res, next) => {
     });
   });
 
-startServer1();
 
 
-module.exports = app;
+
+async function startServer() {
+  // Create Apollo Server
+  const server = new ApolloServer({ typeDefs, resolvers });
+  await server.start();
+
+  // Mount Apollo Server on the Express app
+  server.applyMiddleware({ app });
+
+  // Start the server
+  app.listen(3000, () => {
+    console.log('Server started at http://localhost:3000');
+  });
+}
+startServer();
+
+// module.exports = app;
