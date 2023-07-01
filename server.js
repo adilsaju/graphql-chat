@@ -8,6 +8,12 @@ const pubsub = new PubSub();
 const typeDefs = gql`
   type Query {
     hello: String
+    hello2: String
+    hello3: String
+  }
+
+  type Mutation {
+    addMessage(content: String!): Message
   }
 
   type Subscription {
@@ -23,6 +29,20 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     hello: () => 'Hello, world!',
+    hello2: () => 'Hello, world adil!',
+  },
+  Mutation: {
+    addMessage: (_, { content }) => {
+      const newMessage = {
+        id: Date.now().toString(),
+        content,
+      };
+
+      // Publish the new message to the subscription channel
+      pubsub.publish('MESSAGE_ADDED', { messageAdded: newMessage });
+
+      return newMessage;
+    },
   },
   Subscription: {
     messageAdded: {
