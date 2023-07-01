@@ -1,44 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { ApolloClient, InMemoryCache, ApolloProvider, gql, useSubscription, useQuery } from '@apollo/client';
-
-type Message = {
-  id: string;
-  content: string;
-};
+import React from 'react';
+import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery } from '@apollo/client';
 
 const client = new ApolloClient({
   uri: 'http://localhost:4000/graphql',
   cache: new InMemoryCache(),
 });
 
-const MESSAGE_ADDED_SUBSCRIPTION = gql`
-  subscription {
-    messageAdded {
-      id
-      content
-    }
+const GET_HELLO = gql`
+  query {
+    hello
   }
 `;
 
 function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { loading, error, data } = useQuery(GET_HELLO);
 
-  // useSubscription(MESSAGE_ADDED_SUBSCRIPTION, {
-  //   onSubscriptionData: ({ subscriptionData }) => {
-  //     const newMessage = subscriptionData?.data?.messageAdded;
-  //     if (newMessage) {
-  //       setMessages((prevMessages) => [...prevMessages, newMessage]);
-  //     }
-  //   },
-  // });
+  // if (loading) return <p>Loading...</p>;
+  // if (error) return <p>Error: {error.message}</p>;
 
   return (
     <div>
       <h1>Chat App</h1>
       <ul>
-        {messages.map((message) => (
-          <li key={message?.id}>{message?.content}</li>
-        ))}
+        <li>{data&&data.hello}</li>
       </ul>
     </div>
   );
